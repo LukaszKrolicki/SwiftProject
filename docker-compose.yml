@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: swift-db
+    ports:
+      - "5430:5432"
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: dbpass
+      POSTGRES_USER: postgres
+      POSTGRES_DB: swift_db
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d swift_db"]
+      interval: 10s
+      retries: 5
+      timeout: 5s
+
+  app:
+    container_name: swift-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/swift_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: dbpass
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pg_data:
